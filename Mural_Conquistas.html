@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mural de Conquistas</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0}
+header{background:#1f4e79;color:white;padding:20px;text-align:center}
+.container{padding:20px;max-width:1200px;margin:auto}
+.card{background:white;border-radius:12px;padding:15px;margin:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:15px}
+.avatar{width:80px;height:80px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:28px;margin:auto}
+.hidden{display:none}
+.rank{font-size:24px}
+input,button{padding:10px;margin:5px}
+#confetti{position:fixed;inset:0;pointer-events:none}
+</style>
+</head>
+<body>
+<header>
+<h1>🏆 Mural de Conquistas e Reconhecimento</h1>
+</header>
+
+<div class="container" id="loginArea">
+<div class="card">
+<h3>Acesso</h3>
+<p>Digite seu código:</p>
+<input id="code" type="password">
+<button onclick="login()">Entrar</button>
+</div>
+</div>
+
+<div class="container hidden" id="app">
+<div class="card">
+<h2>Ranking</h2>
+<div id="ranking"></div>
+</div>
+
+<div class="card hidden" id="adminPanel">
+<h2>Painel do Administrador</h2>
+<input id="nome" placeholder="Nome">
+<input id="curso" placeholder="Curso concluído">
+<input id="data" type="date">
+<button onclick="addAchievement()">Cadastrar conquista</button>
+</div>
+
+<div class="grid" id="mural"></div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+const ADMIN_CODE="RAFA2026";
+const USERS={
+"GAB001":"Gabriele Bronze",
+"JVC002":"João Vitor Checheto",
+"JEN003":"Jennyfer Zomer",
+"MEM004":"Maria Elisa Martins",
+"LIL005":"Lilian Castro"
+};
+
+let data=JSON.parse(localStorage.getItem("muralConquistas")||"{}");
+
+Object.values(USERS).forEach(n=>{
+ if(!data[n]) data[n]={courses:[]};
+});
+
+function login(){
+ const c=document.getElementById('code').value;
+ if(c===ADMIN_CODE){
+   document.getElementById('adminPanel').classList.remove('hidden');
+   openApp();
+ } else if(USERS[c]){
+   openApp();
+ } else {
+   alert("Código inválido");
+ }
+}
+
+function openApp(){
+ document.getElementById('loginArea').classList.add('hidden');
+ document.getElementById('app').classList.remove('hidden');
+ render();
+}
+
+function addAchievement(){
+ const nome=document.getElementById('nome').value;
+ const curso=document.getElementById('curso').value;
+ const dt=document.getElementById('data').value;
+
+ if(!data[nome]) data[nome]={courses:[]};
+ data[nome].courses.push({curso,data:dt});
+ localStorage.setItem("muralConquistas",JSON.stringify(data));
+ render();
+ launchConfetti();
+}
+
+function render(){
+ const mural=document.getElementById('mural');
+ mural.innerHTML='';
+
+ Object.entries(data).forEach(([nome,info])=>{
+   let cursos=info.courses.map(c=>`<li>${c.curso} (${c.data})</li>`).join("");
+   mural.innerHTML+=`
+   <div class="card">
+   <div class="avatar">${nome.split(' ')[0][0]}</div>
+   <h3>${nome}</h3>
+   <p><b>Cursos concluídos:</b> ${info.courses.length}</p>
+   <ul>${cursos}</ul>
+   </div>`;
+ });
+
+ const ranking=document.getElementById('ranking');
+ const ordered=Object.entries(data).sort((a,b)=>b[1].courses.length-a[1].courses.length);
+
+ ranking.innerHTML=ordered.map((p,i)=>{
+   let medal="🥉";
+   if(i===0) medal="🥇";
+   else if(i===1) medal="🥈";
+   return `<div class="rank">${medal} ${p[0]} (${p[1].courses.length} cursos)</div>`;
+ }).join("");
+}
+
+function launchConfetti(){
+ const canvas=document.getElementById("confetti");
+ const ctx=canvas.getContext("2d");
+ canvas.width=window.innerWidth;
+ canvas.height=window.innerHeight;
+
+ let pieces=[...Array(150)].map(()=>({x:Math.random()*canvas.width,y:-20*Math.random(),r:5+Math.random()*8,v:2+Math.random()*5}));
+
+ let t=0;
+ function anim(){
+   ctx.clearRect(0,0,canvas.width,canvas.height);
+   pieces.forEach(p=>{
+      ctx.fillRect(p.x,p.y,p.r,p.r);
+      p.y+=p.v;
+   });
+   t++;
+   if(t<150) requestAnimationFrame(anim);
+ }
+ anim();
+}
+</script>
+</body>
+</html>
